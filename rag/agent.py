@@ -6,12 +6,23 @@ from .prompts import confirm_prompt, rag_prompt
 from .retrieval import build_context, format_sources, rewrite_question
 
 
+def _score_summary(relevant: list[tuple]) -> tuple[float, str]:
+    scores = [s for _, s in relevant]
+    top = max(scores)
+    mean = sum(scores) / len(scores)
+    return top, f"[retrieval similarity: top={top:.3f}, mean={mean:.3f}, n={len(scores)}]"
+
+
 def rag_agent(
     question: str,
     history: list[tuple[str, str, str]],
     vector_store: Chroma,
-) -> tuple[str, str]:
-    """Returns (display_output, standalone_question_used_for_retrieval)."""
+) -> tuple[str, str, float]:
+    """Returns (display_output, standalone_question_used_for_retrieval, top_similarity_score).
+
+    top_similarity_score is the highest cosine-similarity score among the chunks that
+    passed SIMILARITY_THRESHOLD, or 0.0 if nothing made the cut.
+    """
 
     # META path: user is asking us to confirm/repeat the previous answer.
     # Reuse the previous standalone question for retrieval; do NOT rewrite.
@@ -24,7 +35,7 @@ def rag_agent(
         relevant = [(doc, score) for doc, score in scored if score >= SIMILARITY_THRESHOLD]
 
         if not relevant:
-            return "I don't know.", prev_standalone
+            return "I don't know.\n[retrieval similarity: no chunks above threshold]", prev_standalone, 0.0
 
         context = build_context(relevant)
         prompt = confirm_prompt.invoke({
@@ -33,11 +44,12 @@ def rag_agent(
             "context": context,
         })
         answer = model.invoke(prompt).content.strip()
+        top, summary = _score_summary(relevant)
 
         if answer.lower().startswith(("i don't know", "i do not know")):
-            return "I don't know.", prev_standalone
+            return f"I don't know.\n{summary}", prev_standalone, top
 
-        return answer + "\n" + format_sources(relevant), prev_standalone
+        return f"{summary}\n{answer}\n{format_sources(relevant)}", prev_standalone, top
 
     # NORMAL path: rewrite the question for retrieval, then answer with the grounded RAG prompt.
     standalone = rewrite_question(question, history)
@@ -48,13 +60,15 @@ def rag_agent(
     relevant = [(doc, score) for doc, score in scored if score >= SIMILARITY_THRESHOLD]
 
     if not relevant:
-        return "I don't know.", standalone
+        return "I don't know.\n[retrieval similarity: no chunks above threshold]", standalone, 0.0
 
     context = build_context(relevant)
     prompt = rag_prompt.invoke({"question": standalone, "context": context})
     answer = model.invoke(prompt).content.strip()
+    top, summary = _score_summary(relevant)
 
     if answer.lower().startswith(("i don't know", "i do not know")):
-        return "I don't know.", standalone
+        return f"I don't know.\n{summary}", standalone, top
 
-    return answer + "\n" + format_sources(relevant), standalone
+    return f"{summary}\n{answer}\n{format_sources(relevant)}", standalone, top
+

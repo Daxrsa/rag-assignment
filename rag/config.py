@@ -23,4 +23,4 @@ MAX_HISTORY_TURNS = 5
 
 # models (shared singletons)
 model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-embeddings_model = OpenAIEmbeddings(model="text-embedding-3-small")
+embeddings_model = OpenAIEmbeddings(model="text-embedding-3-large")

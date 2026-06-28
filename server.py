@@ -2,8 +2,6 @@ from rag.agent import rag_agent
 from rag.config import MAX_HISTORY_TURNS
 from rag.store import build_vector_store
 
-# Preset questions the user can pick by number at the prompt.
-# Add or edit entries here; the menu will update automatically.
 PRESET_QUESTIONS = [
     "Why does Northpeak only offer 5 days PTO annually?",  # 1.
     "What is the revenue for Q2 2026?",  # 2.
@@ -13,12 +11,12 @@ PRESET_QUESTIONS = [
     "What does Northpeak Technologies do?",  # 6.
     "What are some open questions regarding the product?",  # 7.
     "What are some issues regarding the product?",  # 8.
-    "",  # 9.
-    "",  # 10.
-    "",  # 11.
-    "",  # 12.
-    "",  # 13.
-    "",  # 14.
+    "Why has the service degraded over time?",  # 9.
+    "Are you sure that it's due to staff allocation and not because of financial reasons?",  # 10.
+    "Who is Elon Musk?",  # 11.
+    "Give me a cake recipe.",  # 12.
+    "I am confused about the invoice, i need clarification around it.",  # 13.
+    "what happens if payments are missed?",  # 14.
     "",  # 15.
 ]
 
@@ -72,7 +70,7 @@ def main() -> None:
             question = user_input
 
         print("Assistant:")
-        output, standalone = rag_agent(question, chat_history, vector_store)
+        output, standalone, _top_score = rag_agent(question, chat_history, vector_store)
         print(output)
 
         # store only the answer portion (without the Sources block) in history
