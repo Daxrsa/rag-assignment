@@ -1,9 +1,23 @@
 from langchain_chroma import Chroma
 
-from .config import RETRIEVAL_K, SIMILARITY_THRESHOLD, model
+from .config import RETRIEVAL_K, SIMILARITY_THRESHOLD, SIMILARITY_THRESHOLD_TOP1, model
 from .meta import is_meta_question
 from .prompts import confirm_prompt, rag_prompt
 from .retrieval import build_context, format_sources, rewrite_question
+
+
+def _filter_by_threshold(scored: list[tuple]) -> list[tuple]:
+    """Keep chunks above SIMILARITY_THRESHOLD, plus the top-1 if it clears the softer floor.
+
+    Lets borderline-but-clearly-best matches through (e.g. colloquial paraphrases of
+    corpus wording) without admitting unrelated chunks at ranks 2+.
+    """
+    if not scored:
+        return []
+    relevant = [(doc, score) for doc, score in scored if score >= SIMILARITY_THRESHOLD]
+    if not relevant and scored[0][1] >= SIMILARITY_THRESHOLD_TOP1:
+        relevant = [scored[0]]
+    return relevant
 
 
 def _score_summary(relevant: list[tuple]) -> tuple[float, str]:
@@ -32,7 +46,7 @@ def rag_agent(
         print(f"[retrieval query: {prev_standalone}]")
 
         scored = vector_store.similarity_search_with_relevance_scores(prev_standalone, k=RETRIEVAL_K)
-        relevant = [(doc, score) for doc, score in scored if score >= SIMILARITY_THRESHOLD]
+        relevant = _filter_by_threshold(scored)
 
         if not relevant:
             return "I don't know.\n[retrieval similarity: no chunks above threshold]", prev_standalone, 0.0
@@ -57,7 +71,7 @@ def rag_agent(
         print(f"[retrieval query: {standalone}]")
 
     scored = vector_store.similarity_search_with_relevance_scores(standalone, k=RETRIEVAL_K)
-    relevant = [(doc, score) for doc, score in scored if score >= SIMILARITY_THRESHOLD]
+    relevant = _filter_by_threshold(scored)
 
     if not relevant:
         return "I don't know.\n[retrieval similarity: no chunks above threshold]", standalone, 0.0

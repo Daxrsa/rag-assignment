@@ -16,9 +16,12 @@ CHUNK_OVERLAP = 200
 # retrieval
 # - RETRIEVAL_K: how many candidate chunks to pull
 # - SIMILARITY_THRESHOLD: cosine similarity floor; raise to reduce noise, lower to reduce refusals
+# - SIMILARITY_THRESHOLD_TOP1: softer floor applied ONLY to the top-1 chunk, so a single
+#   strong-but-borderline match (e.g. a colloquial paraphrase of corpus wording) still gets through
 # - MAX_HISTORY_TURNS: how many prior (question, answer) pairs to keep for query rewriting
 RETRIEVAL_K = 6
 SIMILARITY_THRESHOLD = 0.30
+SIMILARITY_THRESHOLD_TOP1 = 0.25
 MAX_HISTORY_TURNS = 5
 
 # models (shared singletons)
