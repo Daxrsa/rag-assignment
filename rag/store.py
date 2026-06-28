@@ -1,6 +1,6 @@
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 from .config import (
     CHROMA_DIR,
@@ -34,7 +34,7 @@ def build_vector_store() -> Chroma:
         if not docs:
             raise ValueError(f"No documents found in {DATA_DIR} for patterns: {FILE_PATTERNS}")
 
-        splitter = RecursiveCharacterTextSplitter(
+        splitter = MarkdownHeaderTextSplitter(
             chunk_size=CHUNK_SIZE,
             chunk_overlap=CHUNK_OVERLAP,
             add_start_index=True,
