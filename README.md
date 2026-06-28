@@ -16,6 +16,6 @@
 # Do not infer, estimate, extrapolate, or combine facts to produce new ones. - This rule is causing the assistant to avoid making any inferences about hybrid work arrangements, even though the context implies it. 
 # The assistant is strictly adhering to the rule and not providing a complete answer. This is to reduce the risk of hallucination, but in this case, it leads to an incomplete response. The assistant is not allowed to infer that "minimum of two days in the office" implies "hybrid work" because it is not explicitly stated in the context.
 
-# Issues with the current setting: This rag chatbot is single-shot/statelss, meaing it has no memory of previous interactions. It is also not able to ask clarifying questions, so it cannot confirm the user's intent or provide a more complete answer based on cntext.
+# Issues with the current setting: This rag chatbot is single-shot/stateless, meaing it has no memory of previous interactions. It is also not able to ask clarifying questions, so it cannot confirm the user's intent or provide a more complete answer based on cntext.
 # The assistant is also not allowed to infer or combine facts, for example if you ask it "can i have remote work" and the context says "employees are expected to be in the office a minimum of two days per week", it cannot infer that this means hybrid work is allowed. It can only state what is explicitly in the context.
 
