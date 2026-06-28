@@ -11,8 +11,8 @@ PRESET_QUESTIONS = [
     "What was the Q3 operating profit?",  # 4.
     "How does an employee request a fully remote work arrangement?",  # 5.
     "What does Northpeak Technologies do?",  # 6.
-    "",  # 7.
-    "",  # 8.
+    "What are some open questions regarding the product?",  # 7.
+    "What are some issues regarding the product?",  # 8.
     "",  # 9.
     "",  # 10.
     "",  # 11.
