@@ -24,6 +24,15 @@ SIMILARITY_THRESHOLD = 0.30
 SIMILARITY_THRESHOLD_TOP1 = 0.25
 MAX_HISTORY_TURNS = 5
 
+# verification (third LLM call, gated to high-impact answers only)
+# Weak retrieval = top score below SIMILARITY_THRESHOLD (i.e. we only kept a chunk
+# via the softer SIMILARITY_THRESHOLD_TOP1 floor).
+# - VERIFY_MIN_CHUNKS: if fewer than this many chunks passed the threshold, evidence
+#   is sparse and verification is triggered
+# - VERIFY_QUESTION_LEN: questions longer than this (chars) are treated as high-impact
+VERIFY_MIN_CHUNKS = 2
+VERIFY_QUESTION_LEN = 120
+
 # models (shared singletons)
 model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 embeddings_model = OpenAIEmbeddings(model="text-embedding-3-large")

@@ -167,6 +167,14 @@ CASES: tuple[EvalCase, ...] = (
         ),
     ),
     EvalCase(
+        id="acme_auto_renewal_notice",
+        question="When does the Acme contract auto-renew, and what notice is required to stop it?",
+        category="factual",
+        expected_behavior="answer",
+        expected_answer_contains=("twelve-month", "60 days"),
+        expected_sources=("03_acme_services_agreement.md",),
+    ),
+    EvalCase(
         id="late_payment_terms",
         question="what happens if payments are missed?",
         category="factual",

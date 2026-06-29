@@ -74,3 +74,36 @@ rag_prompt = ChatPromptTemplate.from_messages(
         ),
     ]
 )
+
+# Grounding verifier. Checks whether every factual claim in the draft answer is
+# directly supported by the provided context. Used only on high-impact answers.
+verify_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a strict grounding verifier for a RAG system. You judge whether the DRAFT ANSWER's "
+            "own factual claims are supported by the provided context. Use ONLY the context; do not use "
+            "prior knowledge.\n"
+            "Important scoping rules:\n"
+            "- Judge ONLY claims the draft answer asserts. Do NOT require the question's wording or its "
+            "premises to appear in the context.\n"
+            "- A 'correction' answer of the form \"No. According to the context, <value> [n].\" is "
+            "SUPPORTED whenever <value> appears in the context for the same fact; the user's incorrect "
+            "premise does NOT need to appear in the context.\n"
+            "- A refusal of the form \"I don't know.\" is always SUPPORTED.\n"
+            "- A claim is SUPPORTED only if the exact fact (numbers, dates, names, conditions) appears in "
+            "the context. Paraphrasing is fine; adding, generalizing, or rounding numbers is NOT.\n"
+            "- Mark PARTIAL only if the answer mixes supported and unsupported claims.\n"
+            "- Mark UNSUPPORTED only if NO substantive claim in the draft is supported by the context.\n"
+            "Respond in EXACTLY this format, with no extra text:\n"
+            "VERDICT: <SUPPORTED|PARTIAL|UNSUPPORTED>\n"
+            "REVISED: <if SUPPORTED, leave empty; if PARTIAL, output a corrected answer that keeps only "
+            "the supported claims with citations [n] and adds one short sentence noting what the context "
+            "does not cover; if UNSUPPORTED, output exactly: I don't know.>",
+        ),
+        (
+            "human",
+            "Question:\n{question}\n\nDraft answer:\n{answer}\n\nContext:\n{context}",
+        ),
+    ]
+)
