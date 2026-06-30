@@ -23,9 +23,11 @@ How this helps:
 3-----------------------------------------------------------------------------------------------------
 Verifying the accuracy and correctness of answers:
 We verify answers by using another LLM call. The RAG pattern is:
-       1. Query rewrite (domain phasing)
+       1. Query rewrite (with domain phasing)
        2. Answer generation
-       3. Answer-groundng verification
+       3. Answer-grounding verification
 The problem with this approach is the higher cost and latency, cause we're paying for triple the calls. In order to mend this, we will use the (3.) LLM call only when mistakes are high impact (low retrieval confidence - more likely to hallucinate, asking about policy, finance, legality etc), rather than low impact (asking about notes, Q&A etc). How do we differential between high impact and low impact? 
 - High impact verification: the model has low retrieval confidence (weak top-k similarity and sparse overlap), the user question is long and multi-part, answer includes numbers, dates, policy/legal claims, model provides uncertain or mixed evidence across chunks and/or no clear citations are attached to each claim.
 
+4-----------------------------------------------------------------------------------------------------
+Add notes about where the system fails and why
