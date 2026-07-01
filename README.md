@@ -170,7 +170,7 @@ Every chunk is tagged with a company_id. This is done during the ingestion phase
 
 Demo tech stack: .NET, React, PosgreSQL and FastApi for exposing the RAG query endpoint.
 
-On the backend, I have created an access policy that defines what documents a user can query based on their company_id. The REST Api works as a proxy for checking each user before their query reaches the FastApi. It resolves the user's identity and checks if they are authorized to access a company's documents/chunks.
+When a user uploads a document, the .NET backend reads the user’s token, determines their CompanyId, and stores the file with that company ownership. Later, when the user sends a chat query, the backend builds an access policy (company + allowed document IDs) and sends only that scoped request to FastAPI. FastAPI then fetches only those approved documents from the backend’s internal endpoint, attaches company_id as metadata on each document, and chunks them; because chunking preserves metadata, every chunk inherits the same company_id, so retrieval stays tenant-isolated end to end.
 
 ![System Diagram](image.png)
 
