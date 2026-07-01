@@ -108,6 +108,8 @@ python -m evals.run_eval
 
 # Outline of my design decisions for improving the RAG system:
 
+The main system prompt configures the assistant to be a strictly grounded RAG responder: it must answer naturally and concisely using only the provided context, include citations for factual claims, correct explicit contradictions when the context proves them wrong, and return “I don’t know” when evidence is missing rather than guessing.
+
 1-----------------------------------------------------------------------------------------------------
 Query re-writting using domain phasing.
 The reason behind using a second LLM call for rewritting user questions is done to improve 
