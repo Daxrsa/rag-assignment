@@ -175,5 +175,5 @@ When a user uploads a document, the .NET backend reads the user’s token, deter
 ![System Diagram](image.png)
 
 Optional-----------------------------------------------------------------------------------------------------
-We can create caches for questions that are frequently asked, like "what is our PTO policy?" We do this by generating a question_hash and saving it in cache. But, this means that when two different tenants ask the same question, they could both receive the same answer, causing data leak. Solution: Isolate caches by tenant so cached chunks cannot leak across tenants. Each cache must include a company ID.
+We can preserve LLM calls by creating caches for questions that are frequently asked, like "what is our PTO policy?" We do this by generating a question_hash and saving it in cache. But, this means that when two different tenants ask the same question, they could both receive the same answer, causing data leak. Solution: Isolate caches by tenant so cached chunks cannot leak across tenants. Each cache must include a company ID.
 When documents are changed, we implement a mechanism in the backend to wipe stale cache data.
