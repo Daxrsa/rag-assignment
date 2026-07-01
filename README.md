@@ -1,14 +1,119 @@
+## Setup instructions for running the demo app locally
+
+### 1. Prerequisites
+- Docker Desktop
+- .NET SDK 10
+- Node.js 20+ and npm
+- Python 3.11+ (3.12 recommended)
+
+### 2. Clone and open the project
+```bash
+git clone <repo-url>
+cd rag-assignment
+```
+
+### 3. Configure environment variables
+
+Create a root `.env` file in the project root with your OpenAI key:
+```env
+OPENAI_API_KEY=openai_api_key_here
+```
+
+The CRM backend uses `crm/.env` for DB and API settings.
+If it does not exist, create `crm/.env` with:
+```env
+API_PORT=8080
+DB_HOST=localhost
+DB_HOST_DOCKER=db
+DB_PORT=5432
+DB_NAME=crmdb
+DB_USER=crmuser
+DB_PASSWORD=crmpassword
+```
+
+### 4. Python virtual environment and packages
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.fastapi.txt
+```
+
+### 5. Install frontend packages
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### 6. Start services (four terminals)
+
+Terminal A (Postgres in Docker):
+```bash
+cd crm
+docker compose up
+```
+
+Terminal B (.NET CRM backend):
+```bash
+cd crm
+dotnet run
+```
+
+Terminal C (FastAPI RAG API):
+```bash
+cd /path/to/rag-assignment
+source .venv/bin/activate
+python server-crm.py --host 127.0.0.1 --port 8000
+```
+
+Terminal D (React frontend):
+```bash
+cd frontend
+npm run dev
+```
+
+### 6b. Run the RAG agent directly in console mode (no API)
+If you want to run the RAG agent as a command-line app only, use `server.py` (not `server-crm.py`):
+```bash
+cd /path/to/rag-assignment
+source .venv/bin/activate
+python server.py
+```
+
+Use `server-crm.py` only for FastAPI mode.
+
+### 7. Open the app
+- Frontend: http://localhost:5173
+- CRM API (Swagger): http://localhost:8080/swagger
+- FastAPI health: http://127.0.0.1:8000/health
+
+### 8. Seeded login users (when DB is empty)
+On backend startup, if the database is empty, it auto-seeds these users:
+- `daorsahyseni@gmail.com` in `Company A`
+- `johndoe@gmail.com` in `Company B`
+- Password for both: `P@ssword123`
+
+### 9. Optional: run the evaluator
+```bash
+source .venv/bin/activate
+python -m evals.run_eval
+```
+
+### 10. Troubleshooting
+- If login fails unexpectedly, make sure CRM backend is running on `http://localhost:8080`.
+- If chat fails, make sure FastAPI is running on `http://127.0.0.1:8000`.
+- If DB connection fails, make sure `docker compose up` is running inside `crm/`.
+- If Python import errors appear, re-activate `.venv` and re-run `pip install -r requirements.fastapi.txt`.
+
 # Outline of my design decisions for improving the RAG system:
 
-Setup instructions:
-Login details: 
-
-
 1-----------------------------------------------------------------------------------------------------
+Query re-writting using domain phasing.
 The reason behind using a second LLM call for rewritting user questions is done to improve 
 retrieval by aligning user phasing with document wording so embedding search finds the right chunks.
 This does not change what the user asked, it only improves the phasing so the LLM gets better context.
-I tested cases with and without it and found the model answered better and more often.
+I tested cases with and without it and found the model gave better answers and refused less.
 
 2-----------------------------------------------------------------------------------------------------
 The normal threshold at 0.30 (SIMILARITY_THRESHOLD=0.30)
@@ -60,14 +165,16 @@ Pre-tenant indexes
 Every chunk is tagged with a company_id. This is done during the ingestion phase so ownership remains immutable metada, not inferred later. Then, every vector search must include a hard metadata filter like company_id, to ensure that the model can answer the user only questions regarding their company's documents.
 - We build an access policy object (company, roles, allowed documents)  
 - Before retrieval, the logged in user's token is checked to resolve their identity. 
-- The policy is applied vector retrieval.
+- The policy is applied on vector retrieval.
 - Indexes are logically isolated by having one per tenant/company.
 
+Demo tech stack: .NET, React, PosgreSQL and FastApi for exposing the RAG query endpoint.
 
+On the backend, I have created an access policy that defines what documents a user can query based on their company_id. The REST Api works as a proxy for checking each user before their query reaches the FastApi. It resolves the user's identity and checks if they are authorized to access a company's documents/chunks.
+
+![System Diagram](image.png)
 
 Optional-----------------------------------------------------------------------------------------------------
 We can create caches for questions that are frequently asked, like "what is our PTO policy?" We do this by generating a question_hash and saving it in cache. But, this means that when two different tenants ask the same question, they could both receive the same answer, causing data leak. Solution: Isolate caches by tenant so cached chunks cannot leak across tenants. Each cache must include a tenant ID.
 
 What happens when documents are updated or deleted? We implement a mechanism in the backend to wipe stale cache data.
-
-What if the document is a Google Docs being edited in real-time? (MCP server for fetching document, some kind of real-time indicator that the document is being edited so the user knows that the information could change at any time, fetch google docs history, etc)
