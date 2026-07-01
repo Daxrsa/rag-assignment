@@ -161,7 +161,7 @@ Failed cases:
 5-----------------------------------------------------------------------------------------------------
 Multi-tenant document isolation:
 
-Pre-tenant indexes
+Pre-tenant indexes: 
 Every chunk is tagged with a company_id. This is done during the ingestion phase so ownership remains immutable metada, not inferred later. Then, every vector search must include a hard metadata filter like company_id, to ensure that the model can answer the user only questions regarding their company's documents.
 - We build an access policy object (company, roles, allowed documents)  
 - Before retrieval, the logged in user's token is checked to resolve their identity. 
@@ -175,6 +175,5 @@ When a user uploads a document, the .NET backend reads the user’s token, deter
 ![System Diagram](image.png)
 
 Optional-----------------------------------------------------------------------------------------------------
-We can create caches for questions that are frequently asked, like "what is our PTO policy?" We do this by generating a question_hash and saving it in cache. But, this means that when two different tenants ask the same question, they could both receive the same answer, causing data leak. Solution: Isolate caches by tenant so cached chunks cannot leak across tenants. Each cache must include a tenant ID.
-
-What happens when documents are updated or deleted? We implement a mechanism in the backend to wipe stale cache data.
+We can create caches for questions that are frequently asked, like "what is our PTO policy?" We do this by generating a question_hash and saving it in cache. But, this means that when two different tenants ask the same question, they could both receive the same answer, causing data leak. Solution: Isolate caches by tenant so cached chunks cannot leak across tenants. Each cache must include a company ID.
+When documents are changed, we implement a mechanism in the backend to wipe stale cache data.
