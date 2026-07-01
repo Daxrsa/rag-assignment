@@ -35,8 +35,19 @@ builder.Services.AddIdentityCore<AppUser>(options =>
     .AddSignInManager()
     .AddEntityFrameworkStores<CrmDbContext>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAccessPolicyService, AccessPolicyService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
+builder.Services.AddScoped<IRetrievalProxyService, RetrievalProxyService>();
+builder.Services.AddHttpClient("RagApi", (serviceProvider, client) =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var baseUrl = configuration["RagApi:BaseUrl"];
+    if (Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri))
+    {
+        client.BaseAddress = uri;
+    }
+});
 
 var app = builder.Build();
 

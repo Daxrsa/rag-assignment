@@ -5,10 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace crm.Controllers;
 
-[ApiController]
 [Authorize]
 [Route("files")]
-public sealed class FilesController(IFileService fileService) : ControllerBase
+public sealed class FilesController(IFileService fileService) : BaseController
 {
     [HttpGet]
     public async Task<IActionResult> Fetch([FromQuery] string? company)
@@ -39,23 +38,5 @@ public sealed class FilesController(IFileService fileService) : ControllerBase
         }
 
         return ToActionResult(result);
-    }
-
-    private IActionResult ToActionResult<T>(ServiceResult<T> result)
-    {
-        if (result.Success)
-        {
-            return Ok(result.Value);
-        }
-
-        var payload = new { error = result.Message };
-        return result.Error switch
-        {
-            ServiceError.BadRequest => BadRequest(payload),
-            ServiceError.Conflict => Conflict(payload),
-            ServiceError.NotFound => NotFound(payload),
-            ServiceError.Unauthorized => Unauthorized(payload),
-            _ => StatusCode(StatusCodes.Status500InternalServerError, new { error = "Unexpected service error." }),
-        };
     }
 }
