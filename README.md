@@ -1,5 +1,9 @@
 # Outline of my design decisions for improving the RAG system:
 
+Setup instructions:
+Login details: 
+
+
 1-----------------------------------------------------------------------------------------------------
 The reason behind using a second LLM call for rewritting user questions is done to improve 
 retrieval by aligning user phasing with document wording so embedding search finds the right chunks.
@@ -58,6 +62,8 @@ Every chunk is tagged with a company_id. This is done during the ingestion phase
 - Before retrieval, the logged in user's token is checked to resolve their identity. 
 - The policy is applied vector retrieval.
 - Indexes are logically isolated by having one per tenant/company.
+
+
 
 Optional-----------------------------------------------------------------------------------------------------
 We can create caches for questions that are frequently asked, like "what is our PTO policy?" We do this by generating a question_hash and saving it in cache. But, this means that when two different tenants ask the same question, they could both receive the same answer, causing data leak. Solution: Isolate caches by tenant so cached chunks cannot leak across tenants. Each cache must include a tenant ID.

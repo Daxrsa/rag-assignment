@@ -94,11 +94,28 @@ def _verify_answer(question: str, answer: str, context: str) -> tuple[str, str, 
 
     verdict = "SUPPORTED"
     revised = ""
-    for line in raw.splitlines():
-        if line.upper().startswith("VERDICT:"):
+
+    # Parse verifier output while preserving multi-line REVISED content.
+    # Some model outputs place the corrected answer on subsequent lines after
+    # "REVISED:", which would be truncated by single-line parsing.
+    lines = raw.splitlines()
+    revised_started = False
+    revised_lines: list[str] = []
+    for line in lines:
+        upper = line.upper()
+        if upper.startswith("VERDICT:"):
             verdict = line.split(":", 1)[1].strip().upper()
-        elif line.upper().startswith("REVISED:"):
-            revised = line.split(":", 1)[1].strip()
+            continue
+        if upper.startswith("REVISED:"):
+            revised_started = True
+            first = line.split(":", 1)[1].strip()
+            if first:
+                revised_lines.append(first)
+            continue
+        if revised_started:
+            revised_lines.append(line.rstrip())
+
+    revised = "\n".join(revised_lines).strip()
     if verdict not in _GROUNDING_SCORE:
         verdict = "SUPPORTED"
 

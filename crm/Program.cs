@@ -71,6 +71,7 @@ if (app.Environment.IsDevelopment())
 }
 
 await ApplyMigrationsAtStartupAsync(app.Services, app.Logger);
+await SeedDefaultsIfDatabaseEmptyAsync(app.Services, app.Logger);
 
 app.UseCors("Frontend");
 app.UseAuthentication();
@@ -101,4 +102,54 @@ static async Task ApplyMigrationsAtStartupAsync(IServiceProvider services, ILogg
     }
 
     throw new InvalidOperationException("Could not initialize database after multiple attempts.");
+}
+
+static async Task SeedDefaultsIfDatabaseEmptyAsync(IServiceProvider services, ILogger logger)
+{
+    using var scope = services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<CrmDbContext>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+    var hasAnyUsers = await db.Users.AnyAsync();
+    var hasAnyCompanies = await db.Companies.AnyAsync();
+    if (hasAnyUsers || hasAnyCompanies)
+    {
+        logger.LogInformation("Database is not empty. Skipping default seed.");
+        return;
+    }
+
+    var companyA = new Company { Name = "Company A" };
+    var companyB = new Company { Name = "Company B" };
+    db.Companies.AddRange(companyA, companyB);
+    await db.SaveChangesAsync();
+
+    var seedUsers = new[]
+    {
+        new AppUser
+        {
+            UserName = "daorsahyseni@gmail.com",
+            Email = "daorsahyseni@gmail.com",
+            DisplayName = "daorsahyseni@gmail.com",
+            CompanyId = companyA.Id,
+        },
+        new AppUser
+        {
+            UserName = "johndoe@gmail.com",
+            Email = "johndoe@gmail.com",
+            DisplayName = "johndoe@gmail.com",
+            CompanyId = companyB.Id,
+        },
+    };
+
+    foreach (var seedUser in seedUsers)
+    {
+        var createResult = await userManager.CreateAsync(seedUser, "P@ssword123");
+        if (!createResult.Succeeded)
+        {
+            var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+            throw new InvalidOperationException($"Could not seed user '{seedUser.Email}': {errors}");
+        }
+    }
+
+    logger.LogInformation("Seeded default companies and users.");
 }
