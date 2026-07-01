@@ -1,12 +1,17 @@
+import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 load_dotenv()
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 # corpus + vector store
-DATA_DIR = "/Users/daorsa/Documents/Software/rag-assignment/sample_documents"
-CHROMA_DIR = "/Users/daorsa/Documents/Software/rag-assignment/.chroma"
-COLLECTION_NAME = "rag_assignment"
+DATA_DIR = os.getenv("DATA_DIR", str(PROJECT_ROOT / "sample_documents"))
+CHROMA_DIR = os.getenv("CHROMA_DIR", str(PROJECT_ROOT / ".chroma"))
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "rag_assignment")
 FILE_PATTERNS = ["**/*.txt", "**/*.md"]
 
 # chunking
