@@ -11,6 +11,12 @@ public sealed class RetrievalProxyService(
 {
     public async Task<ServiceResult<RetrievalResponse>> QueryAsync(ClaimsPrincipal principal, RetrievalRequest request)
     {
+        var userId = GetUserId(principal);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return ServiceResult<RetrievalResponse>.Fail(ServiceError.Unauthorized, "Unauthorized.");
+        }
+
         if (string.IsNullOrWhiteSpace(request.Message))
         {
             return ServiceResult<RetrievalResponse>.Fail(ServiceError.BadRequest, "Message is required.");
@@ -47,6 +53,7 @@ public sealed class RetrievalProxyService(
         var payload = new RagApiChatRequest(
             request.Message.Trim(),
             request.SessionId,
+            userId,
             policy.Company,
             policy.CompanyId,
             policy.AllowedDocuments.Select(d => d.Id).ToArray(),
@@ -95,4 +102,7 @@ public sealed class RetrievalProxyService(
 
         return ServiceResult<RetrievalResponse>.Ok(response);
     }
+
+    private static string? GetUserId(ClaimsPrincipal principal)
+        => principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("sub");
 }

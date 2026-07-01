@@ -58,6 +58,7 @@ class ChatRequest(BaseModel):
 
     message: str
     session_id: str | None = Field(default=None, alias="sessionId")
+    user_id: str = Field(alias="userId")
     company: str | None = None
     company_id: int = Field(alias="companyId")
     allowed_document_ids: list[int] = Field(default_factory=list, alias="allowedDocumentIds")
@@ -170,6 +171,9 @@ def chat(req: ChatRequest) -> dict[str, object]:
     if req.company_id <= 0:
         return JSONResponse(status_code=400, content={"error": "companyId is required"})
 
+    if not req.user_id.strip():
+        return JSONResponse(status_code=400, content={"error": "userId is required"})
+
     if not req.tenant_index_name.strip():
         return JSONResponse(status_code=400, content={"error": "tenantIndexName is required"})
 
@@ -185,7 +189,7 @@ def chat(req: ChatRequest) -> dict[str, object]:
     _refresh_tenant_index(vector_store, retrieval_documents)
 
     session_id = req.session_id or str(uuid.uuid4())
-    session_key = f"{req.tenant_index_name}:{session_id}"
+    session_key = f"{req.tenant_index_name}:{req.user_id}:{session_id}"
     history = sessions[session_key]
 
     output, standalone, top_score = rag_agent(message, history, vector_store)

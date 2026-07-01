@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 
 const CRM_API_BASE = import.meta.env.VITE_CRM_API_URL ?? 'http://localhost:5237'
 const TOKEN_STORAGE_KEY = 'crm_access_token'
+const INITIAL_CHAT_MESSAGES = [
+  {
+    role: 'assistant',
+    content: 'Hi. Ask me anything about your company docs and I will help.',
+  },
+]
 
 function App() {
   const [mode, setMode] = useState('login')
@@ -24,12 +30,7 @@ function App() {
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [chatSessionId, setChatSessionId] = useState('')
-  const [chatMessages, setChatMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Hi. Ask me anything about your company docs and I will help.',
-    },
-  ])
+  const [chatMessages, setChatMessages] = useState(INITIAL_CHAT_MESSAGES)
 
   const fileCount = useMemo(() => files.length, [files])
 
@@ -37,11 +38,19 @@ function App() {
     if (!token) {
       setUser(null)
       setFiles([])
+      resetChatState()
       return
     }
 
     void loadSession(token)
   }, [token])
+
+  function resetChatState() {
+    setChatSessionId('')
+    setChatInput('')
+    setChatLoading(false)
+    setChatMessages(INITIAL_CHAT_MESSAGES)
+  }
 
   async function api(path, init = {}, accessToken = token) {
     const headers = {
@@ -90,7 +99,7 @@ function App() {
     setToken('')
     setUser(null)
     setFiles([])
-    setChatSessionId('')
+    resetChatState()
   }
 
   async function handleLogin(event) {
