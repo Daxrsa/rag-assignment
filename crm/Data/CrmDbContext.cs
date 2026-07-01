@@ -36,6 +36,7 @@ public class CrmDbContext(DbContextOptions<CrmDbContext> options) : IdentityDbCo
             entity.ToTable("app_files");
             entity.HasKey(f => f.Id);
             entity.Property(f => f.FileName).HasMaxLength(256).IsRequired();
+            entity.Property(f => f.Content).IsRequired();
             entity.HasIndex(f => f.CompanyId);
             entity.HasOne(f => f.Company)
                 .WithMany(c => c.Files)

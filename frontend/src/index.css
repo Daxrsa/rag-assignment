@@ -277,6 +277,27 @@ input {
   background: #f3e5d9;
 }
 
+.thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thinking-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #d6b89f;
+  border-top-color: var(--brand);
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .chat-form {
   display: grid;
   grid-template-columns: 1fr auto;

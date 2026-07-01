@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
 const CRM_API_BASE = import.meta.env.VITE_CRM_API_URL ?? 'http://localhost:5237'
-const CHAT_API_BASE = import.meta.env.VITE_CHAT_API_URL ?? 'http://localhost:8000'
 const TOKEN_STORAGE_KEY = 'crm_access_token'
 
 function App() {
@@ -21,8 +20,10 @@ function App() {
   })
 
   const [fileName, setFileName] = useState('')
+  const [fileContent, setFileContent] = useState('')
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [chatSessionId, setChatSessionId] = useState('')
   const [chatMessages, setChatMessages] = useState([
     {
       role: 'assistant',
@@ -89,6 +90,7 @@ function App() {
     setToken('')
     setUser(null)
     setFiles([])
+    setChatSessionId('')
   }
 
   async function handleLogin(event) {
@@ -158,16 +160,21 @@ function App() {
       setMessage('Please provide a file name or choose a file first.')
       return
     }
+    if (!fileContent.trim()) {
+      setMessage('Please choose a file so its content can be uploaded.')
+      return
+    }
 
     setLoading(true)
     setMessage('')
     try {
       const created = await api('/files', {
         method: 'POST',
-        body: JSON.stringify({ fileName: fileName.trim() }),
+        body: JSON.stringify({ fileName: fileName.trim(), content: fileContent }),
       })
       setFiles((prev) => [...prev, created])
       setFileName('')
+      setFileContent('')
     } catch (error) {
       setMessage(error.message)
     } finally {
@@ -201,20 +208,19 @@ function App() {
     setChatLoading(true)
 
     try {
-      const response = await fetch(`${CHAT_API_BASE}/chat`, {
+      const payload = await api('/retrieval/query', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: prompt, company: user?.company ?? null }),
+        body: JSON.stringify({
+          message: prompt,
+          sessionId: chatSessionId || null,
+          documentIds: files.map((file) => file.id),
+        }),
       })
 
-      const text = await response.text()
-      const payload = text ? tryParseJson(text) : null
-
-      if (!response.ok) {
-        throw new Error(payload?.error ?? `Chat request failed: ${response.status}`)
-      }
-
       const answer = payload?.answer ?? payload?.response ?? 'No answer returned by chat service.'
+      if (payload?.sessionId) {
+        setChatSessionId(payload.sessionId)
+      }
       setChatMessages((prev) => [...prev, { role: 'assistant', content: answer }])
     } catch (error) {
       setChatMessages((prev) => [
@@ -222,8 +228,8 @@ function App() {
         {
           role: 'assistant',
           content:
-            `I could not reach the AI service (${CHAT_API_BASE}/chat). ` +
-            `Set VITE_CHAT_API_URL if needed. Details: ${error.message}`,
+            `I could not reach the CRM retrieval endpoint (${CRM_API_BASE}/retrieval/query). ` +
+            `Set VITE_CRM_API_URL if needed. Details: ${error.message}`,
         },
       ])
     } finally {
@@ -355,10 +361,17 @@ function App() {
                 Choose file
                 <input
                   type="file"
-                  onChange={(event) => {
+                  onChange={async (event) => {
                     const chosenFile = event.target.files?.[0]
                     if (chosenFile) {
                       setFileName(chosenFile.name)
+                      try {
+                        const content = await chosenFile.text()
+                        setFileContent(content)
+                      } catch {
+                        setFileContent('')
+                        setMessage('Could not read file content. Please try another file.')
+                      }
                     }
                   }}
                 />
@@ -391,7 +404,7 @@ function App() {
 
           <section className="panel chat-panel">
             <h2>Ask the AI Agent</h2>
-            <p className="muted">Connected to {CHAT_API_BASE}/chat</p>
+            <p className="muted">Connected to {CRM_API_BASE}/retrieval/query</p>
 
             <div className="chat-stream">
               {chatMessages.map((entry, index) => (
@@ -399,6 +412,13 @@ function App() {
                   <p>{entry.content}</p>
                 </article>
               ))}
+
+              {chatLoading && (
+                <article className="bubble assistant thinking-bubble" aria-live="polite" aria-busy="true">
+                  <span className="thinking-spinner" aria-hidden="true" />
+                  <p>Thinking...</p>
+                </article>
+              )}
             </div>
 
             <form onSubmit={handleChatSubmit} className="chat-form">

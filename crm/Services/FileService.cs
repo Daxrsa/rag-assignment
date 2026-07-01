@@ -52,6 +52,10 @@ public sealed class FileService(CrmDbContext db) : IFileService
         {
             return ServiceResult<FileResponse>.Fail(ServiceError.BadRequest, "FileName is required.");
         }
+        if (string.IsNullOrWhiteSpace(request.Content))
+        {
+            return ServiceResult<FileResponse>.Fail(ServiceError.BadRequest, "Content is required.");
+        }
 
         var user = await db.Users
             .Include(u => u.Company)
@@ -64,6 +68,7 @@ public sealed class FileService(CrmDbContext db) : IFileService
         var file = new AppFile
         {
             FileName = request.FileName.Trim(),
+            Content = request.Content,
             CompanyId = user.CompanyId,
             CreatedAtUtc = DateTime.UtcNow,
         };
@@ -72,6 +77,45 @@ public sealed class FileService(CrmDbContext db) : IFileService
         await db.SaveChangesAsync();
 
         return ServiceResult<FileResponse>.Ok(new FileResponse(file.Id, file.FileName, user.Company.Name, file.CreatedAtUtc));
+    }
+
+    public async Task<ServiceResult<IReadOnlyList<RetrievalDocumentResponse>>> FetchForRetrievalAsync(
+        int companyId,
+        IReadOnlyCollection<int>? documentIds)
+    {
+        if (companyId <= 0)
+        {
+            return ServiceResult<IReadOnlyList<RetrievalDocumentResponse>>.Fail(
+                ServiceError.BadRequest,
+                "companyId is required.");
+        }
+
+        var requestedIds = (documentIds ?? Array.Empty<int>())
+            .Where(id => id > 0)
+            .Distinct()
+            .ToArray();
+
+        IQueryable<AppFile> query = db.AppFiles.AsNoTracking()
+            .Where(f => f.CompanyId == companyId)
+            .OrderBy(f => f.Id);
+
+        if (requestedIds.Length > 0)
+        {
+            query = query.Where(f => requestedIds.Contains(f.Id));
+        }
+
+        var documents = await query
+            .Select(f => new RetrievalDocumentResponse(f.Id, f.FileName, f.Content, f.CompanyId))
+            .ToListAsync();
+
+        if (requestedIds.Length > 0 && documents.Count != requestedIds.Length)
+        {
+            return ServiceResult<IReadOnlyList<RetrievalDocumentResponse>>.Fail(
+                ServiceError.Unauthorized,
+                "One or more requested documents are outside the company scope.");
+        }
+
+        return ServiceResult<IReadOnlyList<RetrievalDocumentResponse>>.Ok(documents);
     }
 
     public async Task<ServiceResult<bool>> DeleteAsync(ClaimsPrincipal principal, int id)
